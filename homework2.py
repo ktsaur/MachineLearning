@@ -13,33 +13,33 @@ from sklearn.decomposition import PCA
 def main():
     # Загрузка
     df = pd.read_csv('AmesHousing.csv')
-    df = df.drop(columns=['Order', 'PID'], errors='ignore')
-    df = df.dropna(subset=['SalePrice'])
+    df = df.dropna(subset=['SalePrice']) # удаляю строки, где нет целевого значения
 
     # Обработка
     num_cols = df.select_dtypes(include=[np.number]).columns
-    df[num_cols] = df[num_cols].fillna(df[num_cols].mean())
+    df[num_cols] = df[num_cols].fillna(df[num_cols].mean())  # числовые NA — заменяю на средние
     cat_cols = df.select_dtypes(include=['object']).columns
-    df[cat_cols] = df[cat_cols].fillna("NA")
-    df = pd.get_dummies(df, drop_first=True)
+    df[cat_cols] = df[cat_cols].fillna("NA")  # категориальные NA — на "NA"
+    df = pd.get_dummies(df, drop_first=True) # преобразую категории в числа
 
     # Удаляем коррелирующие признаки
     corr_matrix = df.corr().abs()
     upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
     to_drop = [column for column in upper.columns if any(upper[column] > 0.9)]
     df_cleaned = df.drop(columns=to_drop)
-    X = df_cleaned
-    y = df['SalePrice']
+
+    X = df_cleaned # признаки
+    y = df['SalePrice']  # целевая переменная
 
     # Нормализация
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    X_scaled = scaler.fit_transform(X) # привожу все признаки к одному масштабу
 
     # PCA
     pca = PCA(n_components=2)
     X_pca = pca.fit_transform(X_scaled)
-    pca_df = pd.DataFrame(X_pca, columns=['PCA1', 'PCA2'])
-    pca_df['SalePrice'] = y
+    pca_df = pd.DataFrame(X_pca, columns=['PCA1', 'PCA2'])  # Создаем таблицу с компонентами
+    pca_df['SalePrice'] = y # Добавляем целевую переменную
 
     # 3D-график: x, y — признаки (PCA), z — SalePrice
     fig = px.scatter_3d(pca_df, x='PCA1', y='PCA2', z='SalePrice',
@@ -55,9 +55,9 @@ def main():
     rmse_list = []
 
     for alpha in alphas:
-        model = Lasso(alpha=alpha, max_iter=10000)
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
+        model = Lasso(alpha=alpha, max_iter=10000) # Lasso-регрессия
+        model.fit(X_train, y_train) # Обучение
+        y_pred = model.predict(X_test) # Предсказание
         rmse = np.sqrt(mean_squared_error(y_test, y_pred))
         rmse_list.append(rmse)
 
